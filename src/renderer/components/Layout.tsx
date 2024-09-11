@@ -213,74 +213,91 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </Box>
 
       {/* Modal for Add Appointment */}
+      {/* Modal for Add Appointment */}
       {modalOpen && (
-        <Box
-          pos="fixed"
-          top="50%"
-          left="50%"
-          transform="translate(-50%, -50%)"
-          bg="white"
-          p={6}
-          rounded="md"
-          shadow="lg"
-          width="400px"
-        >
-          <h2>Add Appointment</h2>
+        <>
+          {/* Backdrop */}
+          <Box
+            pos="fixed"
+            top="0"
+            left="0"
+            width="100vw"
+            height="100vh"
+            bg="rgba(0, 0, 0, 0.6)" // Semi-transparent dark backdrop
+            zIndex="999" // High z-index to ensure it is above everything
+            onClick={() => setModalOpen(false)} // Clicking outside modal closes it
+          />
 
-          <Stack spacing={4} mt={4}>
-            {/* Doctor Search */}
-            <Input
-              placeholder="Search for a doctor"
-              value={searchDoctor}
-              onChange={handleSearchDoctor}
-            />
-            <Select
-              placeholder="Select Doctor"
-              value={selectedDoctor}
-              onChange={(e) => setSelectedDoctor(e.target.value)}
-            >
-              {filteredDoctors.length > 0
-                ? filteredDoctors.map((doctor: User) => (
-                    <option key={doctor.id} value={doctor.id}>
-                      {doctor.name} {doctor.surname}
-                    </option>
-                  ))
-                : null}
-            </Select>
+          {/* Modal */}
+          <Box
+            pos="fixed"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            bg="white"
+            p={6}
+            rounded="md"
+            shadow="lg"
+            width="400px"
+            zIndex="1000" // Modal should have a higher z-index than the backdrop
+          >
+            <h2>Add Appointment</h2>
 
-            {/* Patient Search */}
-            <Input
-              placeholder="Search for a patient"
-              value={searchPatient}
-              onChange={handleSearchPatient}
-            />
-            <Select
-              placeholder="Select Patient"
-              value={selectedPatient}
-              onChange={(e) => setSelectedPatient(e.target.value)}
-            >
-              {filteredPatients.length > 0
-                ? filteredPatients.map((patient: User) => (
-                    <option key={patient.id} value={patient.id}>
-                      {patient.name} {patient.surname}
-                    </option>
-                  ))
-                : null}
-            </Select>
+            <Stack spacing={4} mt={4}>
+              {/* Doctor Search */}
+              <Input
+                placeholder="Search for a doctor"
+                value={searchDoctor}
+                onChange={handleSearchDoctor}
+              />
+              <Select
+                placeholder="Select Doctor"
+                value={selectedDoctor}
+                onChange={(e) => setSelectedDoctor(e.target.value)}
+              >
+                {filteredDoctors.length > 0
+                  ? filteredDoctors.map((doctor: User) => (
+                      <option key={doctor.id} value={doctor.id}>
+                        {doctor.name} {doctor.surname}
+                      </option>
+                    ))
+                  : null}
+              </Select>
 
-            {/* Appointment Time */}
-            <Input
-              placeholder="Appointment Time (YYYY-MM-DDTHH:MM)"
-              value={appointmentTime}
-              onChange={(e) => setAppointmentTime(e.target.value)}
-            />
+              {/* Patient Search */}
+              <Input
+                placeholder="Search for a patient"
+                value={searchPatient}
+                onChange={handleSearchPatient}
+              />
+              <Select
+                placeholder="Select Patient"
+                value={selectedPatient}
+                onChange={(e) => setSelectedPatient(e.target.value)}
+              >
+                {filteredPatients.length > 0
+                  ? filteredPatients.map((patient: User) => (
+                      <option key={patient.id} value={patient.id}>
+                        {patient.name} {patient.surname}
+                      </option>
+                    ))
+                  : null}
+              </Select>
 
-            <Button colorScheme="blue" onClick={handleSubmitAppointment}>
-              Add Appointment
-            </Button>
-            <Button onClick={() => setModalOpen(false)}>Close</Button>
-          </Stack>
-        </Box>
+              {/* Appointment Time */}
+              <Input
+                placeholder="Appointment Time (YYYY-MM-DDTHH:MM)"
+                value={appointmentTime}
+                onChange={(e) => setAppointmentTime(e.target.value)}
+              />
+
+              <Button colorScheme="blue" onClick={handleSubmitAppointment}>
+                Add Appointment
+              </Button>
+              <Button onClick={() => setModalOpen(false)}>Close</Button>
+            </Stack>
+          </Box>
+        </>
       )}
     </Flex>
   );
