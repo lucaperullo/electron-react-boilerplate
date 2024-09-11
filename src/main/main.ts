@@ -35,15 +35,32 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-// IPC Handler to get data
-ipcMain.handle('get-data', async () => {
+// IPC Handler to get users
+ipcMain.handle('get-users', async () => {
   const data = loadData();
-  return data;
+  return data.users;
 });
 
-// IPC Handler to save data
-ipcMain.handle('save-data', async (event, newData) => {
-  saveData(newData);
+// IPC Handler to get appointments
+ipcMain.handle('get-appointments', async () => {
+  const data = loadData();
+  return data.appointments;
+});
+
+// IPC Handler to add a user
+ipcMain.handle('add-user', async (_event, user) => {
+  const data = loadData();
+  data.users.push(user);
+  saveData(data);
+  return user;
+});
+
+// IPC Handler to add an appointment
+ipcMain.handle('add-appointment', async (_event, appointment) => {
+  const data = loadData();
+  data.appointments.push(appointment);
+  saveData(data);
+  return appointment;
 });
 
 if (process.env.NODE_ENV === 'production') {

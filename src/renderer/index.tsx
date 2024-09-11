@@ -11,8 +11,9 @@ root.render(
 );
 
 // calling IPC exposed from preload script
-window.electron.electronAPI.once('ipc-example', (arg: string) => {
+window.electron.electronAPI.once('ipc-example', (...args: unknown[]) => {
+  const [arg] = args as [string]; // Type assertion for the argument
   console.log(arg);
 });
 
-window.electron.electronAPI.send('ipc-example', ['ping']);
+window.electron.electronAPI.sendMessage('ipc-example', ['ping']);
