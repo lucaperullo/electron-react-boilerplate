@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John",
+      "surname": "Doe",
+      "role": "doctor",
+      "phone_number": "1234567890",
+      "email": "john.doe@example.com",
+      "appointments": []
+    },
+    {
+      "id": 2,
+      "name": "Jane",
+      "surname": "Doe",
+      "role": "patient",
+      "phone_number": "0987654321",
+      "email": "jane.doe@example.com",
+      "appointments": []
+    }
+  ],
+  "appointments": [
+    {
+      "id": 1,
+      "time": "2024-09-12T10:00:00",
+      "doctorID": 1,
+      "patientID": 2
+    }
+  ]
+}

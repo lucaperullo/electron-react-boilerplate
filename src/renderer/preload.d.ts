@@ -1,10 +1,18 @@
-import { ElectronHandler } from '../main/preload';
+import { User, Appointment } from './types';
 
-declare global {
-  // eslint-disable-next-line no-unused-vars
-  interface Window {
-    electron: ElectronHandler;
-  }
+interface ElectronAPI {
+  getUsers: () => Promise<User[]>;
+  getAppointments: () => Promise<Appointment[]>;
+  addAppointment: (appointment: Appointment) => Promise<void>;
+  addUser: (user: User) => Promise<void>;
+  sendMessage: (channel: string, ...args: unknown[]) => void;
+  once: (channel: string, listener: (...args: unknown[]) => void) => void;
 }
 
-export {};
+declare global {
+  interface Window {
+    electron: {
+      electronAPI: ElectronAPI;
+    };
+  }
+}

@@ -1,19 +1,29 @@
-/* eslint global-require: off, no-console: off, promise/always-return: off */
-
-/**
- * This module executes inside of electron's main process. You can start
- * electron renderer process from here and communicate with the other processes
- * through IPC.
- *
- * When running `npm run build` or `npm run build:main`, this file is compiled to
- * `./src/main.js` using webpack. This gives us some performance wins.
- */
 import path from 'path';
+import fs from 'fs';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+
+const dataFilePath = path.join(app.getPath('userData'), 'data.json');
+
+// Utility function to load data from JSON file
+const loadData = () => {
+  if (!fs.existsSync(dataFilePath)) {
+    fs.writeFileSync(
+      dataFilePath,
+      JSON.stringify({ users: [], appointments: [] }, null, 2),
+    );
+  }
+  const data = fs.readFileSync(dataFilePath, 'utf-8');
+  return JSON.parse(data);
+};
+
+// Utility function to save data to JSON file
+const saveData = (data: any) => {
+  fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
+};
 
 class AppUpdater {
   constructor() {
@@ -25,10 +35,15 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+// IPC Handler to get data
+ipcMain.handle('get-data', async () => {
+  const data = loadData();
+  return data;
+});
+
+// IPC Handler to save data
+ipcMain.handle('save-data', async (event, newData) => {
+  saveData(newData);
 });
 
 if (process.env.NODE_ENV === 'production') {
