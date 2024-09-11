@@ -9,7 +9,7 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   FaUser,
   FaStethoscope,
@@ -17,17 +17,8 @@ import {
   FaSignOutAlt,
   FaArrowLeft,
   FaArrowRight,
-} from 'react-icons/fa'; // Import icons from react-icons
-
-interface User {
-  id: number;
-  name: string;
-  surname: string;
-  role: 'doctor' | 'patient';
-  phone_number: string;
-  email?: string;
-  appointments?: Appointment[];
-}
+} from 'react-icons/fa';
+import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
 
 interface Appointment {
   id?: number;
@@ -40,27 +31,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
-  // Modal states
   const [selectedDoctor, setSelectedDoctor] = useState<number | string>('');
   const [selectedPatient, setSelectedPatient] = useState<number | string>('');
-  const [filteredDoctors, setFilteredDoctors] = useState<User[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<User[]>([]);
   const [searchDoctor, setSearchDoctor] = useState('');
-  const [searchPatient, setSearchPatient] = useState('');
+  const [searchPatient, setSearchPatient] = useState(''); // Ensure it's initialized as a string
   const [appointmentTime, setAppointmentTime] = useState('');
 
-  // Fetch all doctors and patients from the data manager
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const users: User[] = await window.electron.electronAPI.getUsers();
-      const doctors = users.filter((user) => user.role === 'doctor');
-      const patients = users.filter((user) => user.role === 'patient');
-      setFilteredDoctors(doctors);
-      setFilteredPatients(patients);
-    };
+  // Access global state and actions from context
+  const { users, addAppointment, refreshData } = useGlobalState();
 
-    fetchUsers();
-  }, []);
+  // Filter doctors and patients from the global state
+  const doctors = users.filter((user) => user.role === 'doctor');
+  const patients = users.filter((user) => user.role === 'patient');
 
   const handleAddAppointment = () => {
     setModalOpen(true);
@@ -76,23 +58,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const handleSearchDoctor = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchDoctor(e.target.value);
-    const filtered = filteredDoctors.filter((doctor: User) =>
-      doctor.name.toLowerCase().includes(e.target.value.toLowerCase()),
-    );
-    setFilteredDoctors(filtered);
   };
 
   const handleSearchPatient = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchPatient(e.target.value);
-    const filtered = filteredPatients.filter((patient: User) =>
-      patient.name.toLowerCase().includes(e.target.value.toLowerCase()),
-    );
-    setFilteredPatients(filtered);
+    setSearchPatient(e.target.value); // Ensure it remains a string
   };
 
   const handleSubmitAppointment = async () => {
     if (selectedDoctor && selectedPatient && appointmentTime) {
-      await window.electron.electronAPI.addAppointment({
+      await addAppointment({
         time: appointmentTime,
         doctorID: Number(selectedDoctor),
         patientID: Number(selectedPatient),
@@ -101,6 +75,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       setSelectedDoctor('');
       setSelectedPatient('');
       setAppointmentTime('');
+      refreshData(); // Refresh global state after adding an appointment
     } else {
       alert('Please select both a doctor and patient and set a time.');
     }
@@ -207,12 +182,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         ml={isSidebarOpen ? '250px' : '80px'}
         w="calc(100vw)"
         h="100vh"
-        overflowY="auto" // Allow scrolling within the content area
+        overflowY="auto"
       >
         {children}
       </Box>
 
-      {/* Modal for Add Appointment */}
       {/* Modal for Add Appointment */}
       {modalOpen && (
         <>
@@ -223,9 +197,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             left="0"
             width="100vw"
             height="100vh"
-            bg="rgba(0, 0, 0, 0.6)" // Semi-transparent dark backdrop
-            zIndex="999" // High z-index to ensure it is above everything
-            onClick={() => setModalOpen(false)} // Clicking outside modal closes it
+            bg="rgba(0, 0, 0, 0.6)"
+            zIndex="999"
+            onClick={() => setModalOpen(false)}
           />
 
           {/* Modal */}
@@ -239,7 +213,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             rounded="md"
             shadow="lg"
             width="400px"
-            zIndex="1000" // Modal should have a higher z-index than the backdrop
+            zIndex="1000"
           >
             <h2>Add Appointment</h2>
 
@@ -255,12 +229,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 value={selectedDoctor}
                 onChange={(e) => setSelectedDoctor(e.target.value)}
               >
-                {filteredDoctors.length > 0
-                  ? filteredDoctors.map((doctor: User) => (
-                      <option key={doctor.id} value={doctor.id}>
-                        {doctor.name} {doctor.surname}
-                      </option>
-                    ))
+                {doctors.length > 0
+                  ? doctors
+                      .filter((doctor) =>
+                        doctor.name.toLowerCase().includes(
+                          (searchDoctor || '').toLowerCase(), // Safeguard searchDoctor
+                        ),
+                      )
+                      .map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          {doctor.name} {doctor.surname}
+                        </option>
+                      ))
                   : null}
               </Select>
 
@@ -275,12 +255,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 value={selectedPatient}
                 onChange={(e) => setSelectedPatient(e.target.value)}
               >
-                {filteredPatients.length > 0
-                  ? filteredPatients.map((patient: User) => (
-                      <option key={patient.id} value={patient.id}>
-                        {patient.name} {patient.surname}
-                      </option>
-                    ))
+                {patients.length > 0
+                  ? patients
+                      .filter((patient) =>
+                        patient.name.toLowerCase().includes(
+                          (searchPatient || '').toLowerCase(), // Safeguard searchPatient
+                        ),
+                      )
+                      .map((patient) => (
+                        <option key={patient.id} value={patient.id}>
+                          {patient.name} {patient.surname}
+                        </option>
+                      ))
                   : null}
               </Select>
 

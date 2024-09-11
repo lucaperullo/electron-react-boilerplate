@@ -7,14 +7,25 @@ import {
   Button,
   Flex,
   Select,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Input,
+  useDisclosure,
 } from '@chakra-ui/react';
+import { FaArrowLeft, FaArrowRight, FaUserPlus } from 'react-icons/fa';
+
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
+import { useGlobalState } from '../context/GlobalStateProvider';
 
-// Add support for custom locale formatting
 dayjs.extend(updateLocale);
 
-// Mock data for doctors (more than 5 to demonstrate scrolling)
 const doctors = [
   'Dr. Smith',
   'Dr. Johnson',
@@ -25,21 +36,20 @@ const doctors = [
   'Dr. Lee',
 ];
 
-// Generate time slots from 8:00 AM to 8:00 PM in 15-minute intervals
 const generateTimeSlots = () => {
-  const startTime = dayjs().hour(8).minute(0); // Start at 8:00 AM
-  const endTime = dayjs().hour(20).minute(0); // End at 8:00 PM
+  const startTime = dayjs().hour(8).minute(0);
+  const endTime = dayjs().hour(20).minute(0);
   const slots = [];
 
   let currentTime = startTime;
   while (currentTime.isBefore(endTime) || currentTime.isSame(endTime)) {
-    slots.push(currentTime.format('HH:mm')); // Add current time slot to array
-    currentTime = currentTime.add(15, 'minute'); // Increment by 15 minutes
+    slots.push(currentTime.format('HH:mm'));
+    currentTime = currentTime.add(15, 'minute');
   }
   return slots;
 };
 
-const timeSlots = generateTimeSlots(); // Call function to generate slots
+const timeSlots = generateTimeSlots();
 
 const months = [
   'January',
@@ -57,21 +67,28 @@ const months = [
 ];
 
 const DailyViewCalendar = () => {
-  const [selectedDate, setSelectedDate] = useState(dayjs()); // Start with today's date
+  const { users, addUser, refreshData } = useGlobalState(); // Use global state
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedDate, setSelectedDate] = useState(dayjs());
 
-  // Generate year options for dropdown (current year - 10 years + 10 years into the future)
+  const [newPatient, setNewPatient] = useState({
+    name: '',
+    surname: '',
+    role: 'patient' as 'patient', // Explicitly typed to 'patient'
+    phone_number: '',
+    email: '',
+  });
+
   const currentYear = dayjs().year();
   const years = Array.from(
     { length: 21 },
     (_, index) => currentYear - 10 + index,
   );
 
-  // Handle day, month, and year navigation
   const goToPreviousDay = () =>
     setSelectedDate(selectedDate.subtract(1, 'day'));
   const goToNextDay = () => setSelectedDate(selectedDate.add(1, 'day'));
 
-  // Explicitly type the event for the Select inputs
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = parseInt(e.target.value);
     setSelectedDate(selectedDate.month(newMonth));
@@ -82,9 +99,33 @@ const DailyViewCalendar = () => {
     setSelectedDate(selectedDate.year(newYear));
   };
 
+  const handleAddPatient = async () => {
+    if (!newPatient.name || !newPatient.surname || !newPatient.phone_number) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    const patientWithId = {
+      ...newPatient,
+      id: Date.now(), // Assign a unique ID
+    };
+    await addUser(patientWithId); // Add the patient using context function
+    setNewPatient({
+      name: '',
+      surname: '',
+      role: 'patient',
+      phone_number: '',
+      email: '',
+    });
+    onClose();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewPatient((prev) => ({ ...prev, [name]: value }));
+  };
+
   return (
     <Box w="100%">
-      {/* Sticky Calendar Navigation */}
       <Box
         position="sticky"
         top={'-7px'}
@@ -95,14 +136,19 @@ const DailyViewCalendar = () => {
         borderBottom="1px solid #e2e8f0"
       >
         <Flex justify="space-between" align="center">
-          <Button onClick={goToPreviousDay}>Previous Day</Button>
-
           <Flex align="center">
+            <IconButton
+              aria-label="Previous Day"
+              icon={<FaArrowLeft />}
+              onClick={goToPreviousDay}
+              mr={2}
+            />
+
             <Select
               value={selectedDate.month()}
               onChange={handleMonthChange}
-              width="150px"
-              mr={4}
+              width="120px"
+              mr={2}
             >
               {months.map((month: string, index: number) => (
                 <option key={month} value={index}>
@@ -122,25 +168,30 @@ const DailyViewCalendar = () => {
                 </option>
               ))}
             </Select>
+
+            <IconButton
+              aria-label="Next Day"
+              icon={<FaArrowRight />}
+              onClick={goToNextDay}
+              ml={2}
+            />
           </Flex>
 
-          <Text fontSize="xl" fontWeight="bold">
-            {selectedDate.format('MMMM D, YYYY')}
-          </Text>
-
-          <Button onClick={goToNextDay}>Next Day</Button>
+          <IconButton
+            aria-label="Add Patient"
+            icon={<FaUserPlus />}
+            colorScheme="teal"
+            onClick={onOpen}
+          />
         </Flex>
       </Box>
 
-      {/* Scrollable doctors list */}
       <Box overflowX="auto">
-        {/* Limit the number of visible doctors to 5 and enable horizontal scrolling */}
         <Grid
           templateColumns={`repeat(${doctors.length + 1}, 1fr)`}
           gap={4}
-          minWidth={`${(doctors.length + 1) * 200}px`} // Ensure enough width to scroll horizontally
+          minWidth={`${(doctors.length + 1) * 200}px`}
         >
-          {/* Sticky Time Slots on the y-axis */}
           <GridItem
             position="sticky"
             left={0}
@@ -154,7 +205,6 @@ const DailyViewCalendar = () => {
             </Text>
           </GridItem>
 
-          {/* Render sticky doctor names on the x-axis */}
           {doctors.map((doctor) => (
             <GridItem
               key={doctor}
@@ -162,7 +212,7 @@ const DailyViewCalendar = () => {
               top="47px"
               bg="white"
               zIndex="100"
-              width="200px" // Ensure fixed width for each doctor column
+              width="200px"
             >
               <Text fontWeight="bold" textAlign="center">
                 {doctor}
@@ -170,10 +220,8 @@ const DailyViewCalendar = () => {
             </GridItem>
           ))}
 
-          {/* Render time slots on the y-axis and cells for each doctor/time slot */}
           {timeSlots.map((time) => (
             <>
-              {/* Time slot on the y-axis */}
               <GridItem
                 key={time}
                 position="sticky"
@@ -185,16 +233,14 @@ const DailyViewCalendar = () => {
                 <Text textAlign="center">{time}</Text>
               </GridItem>
 
-              {/* Cells for each doctor/time slot */}
               {doctors.map((doctor) => (
                 <GridItem
                   key={`${doctor}-${time}`}
                   border="1px solid gray"
                   p={2}
                   textAlign="center"
-                  width="200px" // Ensure fixed width for each time slot
+                  width="200px"
                 >
-                  {/* Placeholder for availability, appointments, etc. */}
                   Available
                 </GridItem>
               ))}
@@ -202,6 +248,49 @@ const DailyViewCalendar = () => {
           ))}
         </Grid>
       </Box>
+
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add New Patient</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Input
+              placeholder="Name"
+              name="name"
+              value={newPatient.name}
+              onChange={handleInputChange}
+              mb={4}
+            />
+            <Input
+              placeholder="Surname"
+              name="surname"
+              value={newPatient.surname}
+              onChange={handleInputChange}
+              mb={4}
+            />
+            <Input
+              placeholder="Phone Number"
+              name="phone_number"
+              value={newPatient.phone_number}
+              onChange={handleInputChange}
+              mb={4}
+            />
+            <Input
+              placeholder="Email (Optional)"
+              name="email"
+              value={newPatient.email}
+              onChange={handleInputChange}
+            />
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleAddPatient}>
+              Add Patient
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

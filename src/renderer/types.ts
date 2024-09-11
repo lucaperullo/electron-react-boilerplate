@@ -7,7 +7,7 @@ export interface Appointment {
 }
 
 export interface User {
-  id: number;
+  id?: number;
   name: string;
   surname: string;
   role: 'doctor' | 'patient';
