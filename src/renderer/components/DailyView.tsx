@@ -166,14 +166,15 @@ const DailyViewCalendar = () => {
         borderBottom="1px solid #e2e8f0"
       >
         <Flex justify="space-between" align="center">
-          <Flex align="center">
+          <Flex align="center" ml={10}>
+            {' '}
+            {/* Added left margin */}
             <IconButton
               aria-label="Previous Day"
               icon={<FaArrowLeft />}
               onClick={goToPreviousDay}
               mr={2}
             />
-
             <DatePicker
               selected={selectedDate}
               onChange={(date: Date | null) => date && setSelectedDate(date)}
@@ -188,7 +189,6 @@ const DailyViewCalendar = () => {
               showYearDropdown
               dropdownMode="select"
             />
-
             <Select
               value={dayjs(selectedDate).month()}
               onChange={handleMonthChange}
@@ -201,7 +201,6 @@ const DailyViewCalendar = () => {
                 </option>
               ))}
             </Select>
-
             <Select
               value={dayjs(selectedDate).year()}
               onChange={handleYearChange}
@@ -213,7 +212,6 @@ const DailyViewCalendar = () => {
                 </option>
               ))}
             </Select>
-
             <IconButton
               aria-label="Next Day"
               icon={<FaArrowRight />}

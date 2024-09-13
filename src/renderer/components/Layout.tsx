@@ -19,6 +19,17 @@ import {
   FaArrowRight,
 } from 'react-icons/fa';
 import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
+import dayjs from 'dayjs';
+
+// Function to round up to the nearest 5-minute interval
+const roundUpToNearest5Minutes = (time: dayjs.Dayjs) => {
+  const minutes = time.minute();
+  const roundedMinutes = Math.ceil(minutes / 5) * 5;
+  return time.minute(roundedMinutes).second(0);
+};
+
+// Set the default time to the current time rounded up to the nearest 5-minute interval
+const defaultTime = roundUpToNearest5Minutes(dayjs()).format('HH:mm');
 
 interface Appointment {
   id?: number;
@@ -35,7 +46,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [selectedPatient, setSelectedPatient] = useState<number | string>('');
   const [searchDoctor, setSearchDoctor] = useState('');
   const [searchPatient, setSearchPatient] = useState(''); // Ensure it's initialized as a string
-  const [appointmentTime, setAppointmentTime] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState(
+    dayjs().format('YYYY-MM-DD'),
+  ); // Default to current date
+  const [appointmentTime, setAppointmentTime] = useState(defaultTime); // Default to rounded current time
 
   // Access global state and actions from context
   const { users, addAppointment, refreshData } = useGlobalState();
@@ -65,19 +79,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const handleSubmitAppointment = async () => {
-    if (selectedDoctor && selectedPatient && appointmentTime) {
+    if (
+      selectedDoctor &&
+      selectedPatient &&
+      appointmentDate &&
+      appointmentTime
+    ) {
       await addAppointment({
-        time: appointmentTime,
+        time: `${appointmentDate}T${appointmentTime}`,
         doctorID: Number(selectedDoctor),
         patientID: Number(selectedPatient),
       });
       setModalOpen(false);
       setSelectedDoctor('');
       setSelectedPatient('');
-      setAppointmentTime('');
+      setAppointmentDate(dayjs().format('YYYY-MM-DD')); // Reset to current date
+      setAppointmentTime(defaultTime); // Reset to rounded current time
       refreshData(); // Refresh global state after adding an appointment
     } else {
-      alert('Please select both a doctor and patient and set a time.');
+      alert('Please select both a doctor and patient and set a date and time.');
     }
   };
 
@@ -270,9 +290,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   : null}
               </Select>
 
+              {/* Appointment Date */}
+              <Input
+                type="date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+              />
+
               {/* Appointment Time */}
               <Input
-                placeholder="Appointment Time (YYYY-MM-DDTHH:MM)"
+                type="time"
                 value={appointmentTime}
                 onChange={(e) => setAppointmentTime(e.target.value)}
               />
