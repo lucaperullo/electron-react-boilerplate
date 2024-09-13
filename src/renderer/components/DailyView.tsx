@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import {
   Box,
   Grid,
@@ -19,7 +19,9 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { FaArrowLeft, FaArrowRight, FaUserPlus } from 'react-icons/fa';
-
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { useGlobalState } from '../context/GlobalStateProvider';
@@ -27,13 +29,13 @@ import { useGlobalState } from '../context/GlobalStateProvider';
 dayjs.extend(updateLocale);
 
 const doctors = [
-  'Dr. Smith',
-  'Dr. Johnson',
-  'Dr. Brown',
-  'Dr. Filipe',
-  'Dr. Luca',
-  'Dr. Taylor',
-  'Dr. Lee',
+  'Dr. Triforce',
+  'Dr. Taric',
+  'Dr. Better',
+  'Dr. Than',
+  'Dr. Tryhard',
+  'Dr. Lee Sin',
+  'Dr. XD',
 ];
 
 const generateTimeSlots = () => {
@@ -66,10 +68,37 @@ const months = [
   'December',
 ];
 
+interface CustomInputProps {
+  value: string;
+  onClick: () => void;
+}
+
+const CustomInput = forwardRef<HTMLButtonElement, CustomInputProps>(
+  ({ value, onClick }, ref) => (
+    <Button
+      onClick={onClick}
+      ref={ref}
+      width="60px"
+      mr={2}
+      textAlign="center"
+      fontWeight="normal"
+      fontSize="md"
+      border="1px solid #e2e8f0"
+      borderRadius="md"
+      bg="white"
+      _hover={{ bg: 'gray.100' }}
+      _focus={{ boxShadow: 'outline' }}
+      rightIcon={<ChevronDownIcon />}
+    >
+      {value}
+    </Button>
+  ),
+);
+
 const DailyViewCalendar = () => {
   const { users, addUser, refreshData } = useGlobalState(); // Use global state
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
 
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -86,17 +115,18 @@ const DailyViewCalendar = () => {
   );
 
   const goToPreviousDay = () =>
-    setSelectedDate(selectedDate.subtract(1, 'day'));
-  const goToNextDay = () => setSelectedDate(selectedDate.add(1, 'day'));
+    setSelectedDate(dayjs(selectedDate).subtract(1, 'day').toDate());
+  const goToNextDay = () =>
+    setSelectedDate(dayjs(selectedDate).add(1, 'day').toDate());
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = parseInt(e.target.value);
-    setSelectedDate(selectedDate.month(newMonth));
+    setSelectedDate(dayjs(selectedDate).month(newMonth).toDate());
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = parseInt(e.target.value);
-    setSelectedDate(selectedDate.year(newYear));
+    setSelectedDate(dayjs(selectedDate).year(newYear).toDate());
   };
 
   const handleAddPatient = async () => {
@@ -144,10 +174,25 @@ const DailyViewCalendar = () => {
               mr={2}
             />
 
+            <DatePicker
+              selected={selectedDate}
+              onChange={(date: Date | null) => date && setSelectedDate(date)}
+              customInput={
+                <CustomInput
+                  value={dayjs(selectedDate).format('DD')}
+                  onClick={() => {}}
+                />
+              }
+              dateFormat="dd"
+              showMonthDropdown
+              showYearDropdown
+              dropdownMode="select"
+            />
+
             <Select
-              value={selectedDate.month()}
+              value={dayjs(selectedDate).month()}
               onChange={handleMonthChange}
-              width="120px"
+              width="135px" // Adjusted width to accommodate the longest month name
               mr={2}
             >
               {months.map((month: string, index: number) => (
@@ -158,7 +203,7 @@ const DailyViewCalendar = () => {
             </Select>
 
             <Select
-              value={selectedDate.year()}
+              value={dayjs(selectedDate).year()}
               onChange={handleYearChange}
               width="100px"
             >

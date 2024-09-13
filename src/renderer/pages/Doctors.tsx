@@ -1,5 +1,11 @@
+import DailyViewCalendar from '../components/DailyView';
+
 const Doctors = () => {
-  return <div>Doctors Page</div>;
+  return (
+    <div>
+      <DailyViewCalendar />
+    </div>
+  );
 };
 
 export default Doctors;
