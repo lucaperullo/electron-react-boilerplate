@@ -200,9 +200,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <Box
         as="main"
         ml={isSidebarOpen ? '250px' : '80px'}
-        w="calc(100vw)"
+        w="calc(100vw - 250px)"
         h="100vh"
         overflowY="auto"
+        transition="margin-left 0.3s ease, width 0.3s ease"
       >
         {children}
       </Box>
