@@ -8,17 +8,9 @@ import {
   Flex,
   Select,
   IconButton,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Input,
   useDisclosure,
 } from '@chakra-ui/react';
-import { FaArrowLeft, FaArrowRight, FaUserPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ChevronDownIcon } from '@chakra-ui/icons';
@@ -96,17 +88,9 @@ const CustomInput = forwardRef<HTMLButtonElement, CustomInputProps>(
 );
 
 const DailyViewCalendar = () => {
-  const { users, addUser, refreshData } = useGlobalState(); // Use global state
+  const { users, refreshData } = useGlobalState(); // Use global state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
-
-  const [newPatient, setNewPatient] = useState({
-    name: '',
-    surname: '',
-    role: 'patient' as 'patient', // Explicitly typed to 'patient'
-    phone_number: '',
-    email: '',
-  });
 
   const currentYear = dayjs().year();
   const years = Array.from(
@@ -127,31 +111,6 @@ const DailyViewCalendar = () => {
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = parseInt(e.target.value);
     setSelectedDate(dayjs(selectedDate).year(newYear).toDate());
-  };
-
-  const handleAddPatient = async () => {
-    if (!newPatient.name || !newPatient.surname || !newPatient.phone_number) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-    const patientWithId = {
-      ...newPatient,
-      id: Date.now(), // Assign a unique ID
-    };
-    await addUser(patientWithId); // Add the patient using context function
-    setNewPatient({
-      name: '',
-      surname: '',
-      role: 'patient',
-      phone_number: '',
-      email: '',
-    });
-    onClose();
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewPatient((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -219,13 +178,6 @@ const DailyViewCalendar = () => {
               ml={2}
             />
           </Flex>
-
-          <IconButton
-            aria-label="Add Patient"
-            icon={<FaUserPlus />}
-            colorScheme="teal"
-            onClick={onOpen}
-          />
         </Flex>
       </Box>
 
@@ -291,49 +243,6 @@ const DailyViewCalendar = () => {
           ))}
         </Grid>
       </Box>
-
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Add New Patient</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Input
-              placeholder="Name"
-              name="name"
-              value={newPatient.name}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            <Input
-              placeholder="Surname"
-              name="surname"
-              value={newPatient.surname}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            <Input
-              placeholder="Phone Number"
-              name="phone_number"
-              value={newPatient.phone_number}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            <Input
-              placeholder="Email (Optional)"
-              name="email"
-              value={newPatient.email}
-              onChange={handleInputChange}
-            />
-          </ModalBody>
-
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={handleAddPatient}>
-              Add Patient
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 };

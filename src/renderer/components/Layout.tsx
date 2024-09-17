@@ -7,8 +7,11 @@ import {
   Input,
   Select,
   Stack,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import {
   FaUser,
@@ -17,8 +20,9 @@ import {
   FaSignOutAlt,
   FaArrowLeft,
   FaArrowRight,
+  FaUserPlus,
 } from 'react-icons/fa';
-import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
+import { useGlobalState } from '../context/GlobalStateProvider';
 import dayjs from 'dayjs';
 
 // Function to round up to the nearest 5-minute interval
@@ -51,8 +55,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   ); // Default to current date
   const [appointmentTime, setAppointmentTime] = useState(defaultTime); // Default to rounded current time
 
+  const [userType, setUserType] = useState<'doctor' | 'patient'>('patient'); // State to track user type
+  const [newUser, setNewUser] = useState<{
+    name: string;
+    surname: string;
+    role: 'doctor' | 'patient';
+    specialty: string;
+    phone_number: string;
+    email: string;
+  }>({
+    name: '',
+    surname: '',
+    role: 'patient', // Default to 'patient'
+    specialty: '',
+    phone_number: '',
+    email: '',
+  });
+
   // Access global state and actions from context
-  const { users, addAppointment, refreshData } = useGlobalState();
+  const { users, addUser, addAppointment, refreshData } = useGlobalState();
 
   // Filter doctors and patients from the global state
   const doctors = users.filter((user) => user.role === 'doctor');
@@ -101,6 +122,47 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.surname || !newUser.phone_number) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    if (userType === 'doctor' && !newUser.specialty) {
+      alert('Please fill in the specialty for the doctor.');
+      return;
+    }
+    const userWithId = {
+      ...newUser,
+      id: Date.now(), // Assign a unique ID
+    };
+    await addUser(userWithId); // Add the user using context function
+    setNewUser({
+      name: '',
+      surname: '',
+      role: 'patient', // Reset role to 'patient'
+      specialty: '',
+      phone_number: '',
+      email: '',
+    });
+    setUserType('patient'); // Reset user type to 'patient'
+    setModalOpen(false);
+    refreshData(); // Refresh global state after adding a user
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewUser((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUserTypeChange = (value: 'doctor' | 'patient') => {
+    setUserType(value);
+    setNewUser((prev) => ({
+      ...prev,
+      role: value,
+      specialty: value === 'doctor' ? '' : prev.specialty,
+    }));
+  };
+
   return (
     <Flex height="100vh" w="100vw" overflow="hidden">
       {/* Sidebar */}
@@ -121,20 +183,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       >
         <VStack spacing={4} align="start" h="100%" w="100%">
           <Button
-            as={Link}
-            to="/patients"
             width="100%"
             leftIcon={
               <Icon m={0} display="flex" justifyContent="center" as={FaUser} />
             }
             justifyContent={isSidebarOpen ? 'flex-start' : 'center'}
+            isDisabled
           >
             {isSidebarOpen && 'Patients'}
           </Button>
 
           <Button
-            as={Link}
-            to="/doctors"
             width="100%"
             leftIcon={
               <Icon
@@ -145,6 +204,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               />
             }
             justifyContent={isSidebarOpen ? 'flex-start' : 'center'}
+            isDisabled
           >
             {isSidebarOpen && 'Doctors'}
           </Button>
@@ -154,10 +214,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             leftIcon={
               <Icon m={0} display="flex" justifyContent="center" as={FaPlus} />
             }
-            onClick={handleAddAppointment}
+            onClick={() => setModalOpen(true)}
             justifyContent={isSidebarOpen ? 'flex-start' : 'center'}
           >
-            {isSidebarOpen && 'Add Appointment'}
+            {isSidebarOpen && 'Add User'}
           </Button>
 
           <Box mt="auto" pt={4} w="100%">
@@ -205,10 +265,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         overflowY="auto"
         transition="margin-left 0.3s ease, width 0.3s ease"
       >
+        {/* Top Bar */}
+        <Flex justify="space-between" align="center" p={4} bg="gray.100">
+          <Button
+            leftIcon={<FaUserPlus />}
+            colorScheme="teal"
+            onClick={() => setModalOpen(true)}
+          >
+            Add User
+          </Button>
+        </Flex>
+
         {children}
       </Box>
 
-      {/* Modal for Add Appointment */}
+      {/* Modal for Add User */}
       {modalOpen && (
         <>
           {/* Backdrop */}
@@ -236,77 +307,63 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             width="400px"
             zIndex="1000"
           >
-            <h2>Add Appointment</h2>
+            <h2>Add User</h2>
 
             <Stack spacing={4} mt={4}>
-              {/* Doctor Search */}
-              <Input
-                placeholder="Search for a doctor"
-                value={searchDoctor}
-                onChange={handleSearchDoctor}
-              />
-              <Select
-                placeholder="Select Doctor"
-                value={selectedDoctor}
-                onChange={(e) => setSelectedDoctor(e.target.value)}
-              >
-                {doctors.length > 0
-                  ? doctors
-                      .filter((doctor) =>
-                        doctor.name.toLowerCase().includes(
-                          (searchDoctor || '').toLowerCase(), // Safeguard searchDoctor
-                        ),
-                      )
-                      .map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.name} {doctor.surname}
-                        </option>
-                      ))
-                  : null}
-              </Select>
+              <FormControl as="fieldset">
+                <FormLabel as="legend">User Type</FormLabel>
+                <RadioGroup
+                  value={userType}
+                  onChange={(value) =>
+                    handleUserTypeChange(value as 'doctor' | 'patient')
+                  }
+                >
+                  <Stack direction="row">
+                    <Radio value="doctor">Doctor</Radio>
+                    <Radio value="patient">Patient</Radio>
+                  </Stack>
+                </RadioGroup>
+              </FormControl>
 
-              {/* Patient Search */}
               <Input
-                placeholder="Search for a patient"
-                value={searchPatient}
-                onChange={handleSearchPatient}
+                placeholder="Name"
+                name="name"
+                value={newUser.name}
+                onChange={handleInputChange}
+                mb={4}
               />
-              <Select
-                placeholder="Select Patient"
-                value={selectedPatient}
-                onChange={(e) => setSelectedPatient(e.target.value)}
-              >
-                {patients.length > 0
-                  ? patients
-                      .filter((patient) =>
-                        patient.name.toLowerCase().includes(
-                          (searchPatient || '').toLowerCase(), // Safeguard searchPatient
-                        ),
-                      )
-                      .map((patient) => (
-                        <option key={patient.id} value={patient.id}>
-                          {patient.name} {patient.surname}
-                        </option>
-                      ))
-                  : null}
-              </Select>
-
-              {/* Appointment Date */}
               <Input
-                type="date"
-                value={appointmentDate}
-                onChange={(e) => setAppointmentDate(e.target.value)}
+                placeholder="Surname"
+                name="surname"
+                value={newUser.surname}
+                onChange={handleInputChange}
+                mb={4}
+              />
+              {userType === 'doctor' && (
+                <Input
+                  placeholder="Specialty"
+                  name="specialty"
+                  value={newUser.specialty}
+                  onChange={handleInputChange}
+                  mb={4}
+                />
+              )}
+              <Input
+                placeholder="Phone Number"
+                name="phone_number"
+                value={newUser.phone_number}
+                onChange={handleInputChange}
+                mb={4}
+              />
+              <Input
+                placeholder="Email (Optional)"
+                name="email"
+                value={newUser.email}
+                onChange={handleInputChange}
               />
 
-              {/* Appointment Time */}
-              <Input
-                type="time"
-                value={appointmentTime}
-                onChange={(e) => setAppointmentTime(e.target.value)}
-              />
-
-              <Button colorScheme="blue" onClick={handleSubmitAppointment}>
-                Add Appointment
+              <Button colorScheme="blue" onClick={handleAddUser}>
+                Add {userType.charAt(0).toUpperCase() + userType.slice(1)}
               </Button>
               <Button onClick={() => setModalOpen(false)}>Close</Button>
             </Stack>

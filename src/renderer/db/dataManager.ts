@@ -46,7 +46,15 @@ db.prepare(
 // Get all users with their appointments
 ipcMain.handle('get-users', async () => {
   // Fetch all users from the 'users' table
-  const users = db.prepare('SELECT * FROM users').all();
+  const users = db.prepare('SELECT * FROM users').all() as {
+    id: number;
+    name: string;
+    surname: string;
+    role: string;
+    specialty: string | null;
+    phone_number: string;
+    email: string | null;
+  }[];
 
   // Prepare a statement to fetch appointments for a user
   const getAppointments = db.prepare(`
@@ -60,7 +68,7 @@ ipcMain.handle('get-users', async () => {
   `);
 
   // For each user, fetch their appointments and attach them
-  const usersWithAppointments = users.map((user) => {
+  const usersWithAppointments = users.map((user: { id: number }) => {
     const appointments = getAppointments.all(user.id, user.id);
     return { ...user, appointments };
   });

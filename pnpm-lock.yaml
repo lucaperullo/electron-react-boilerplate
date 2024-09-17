@@ -23,9 +23,6 @@ importers:
       '@emotion/styled':
         specifier: ^11.13.0
         version: 11.13.0(@emotion/react@11.13.3(@types/react@18.3.5)(react@18.3.1))(@types/react@18.3.5)(react@18.3.1)
-      '@types/better-sqlite3':
-        specifier: ^7.6.11
-        version: 7.6.11
       acorn:
         specifier: ^8.12.1
         version: 8.12.1
@@ -90,6 +87,9 @@ importers:
       '@types/babel__template':
         specifier: ^7.4.4
         version: 7.4.4
+      '@types/better-sqlite3':
+        specifier: ^7.6.11
+        version: 7.6.11
       '@types/bonjour':
         specifier: ^3.5.13
         version: 3.5.13
