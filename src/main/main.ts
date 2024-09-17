@@ -6,9 +6,15 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import 'source-map-support/register';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 // Define the path to the SQLite database file
 const dbFilePath = path.join(app.getPath('userData'), 'data.db');
+
+// Ensure the database file exists
+if (!fs.existsSync(dbFilePath)) {
+  fs.writeFileSync(dbFilePath, '');
+}
 
 // Initialize the SQLite database
 const db = new Database(dbFilePath);
@@ -24,11 +30,9 @@ db.prepare(
     name TEXT NOT NULL,
     surname TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('doctor', 'patient')),
-    specialty TEXT,
-    phone_number TEXT NOT NULL,
-    email TEXT
+    specialty TEXT
   )
-`,
+  `
 ).run();
 
 // Create the 'appointments' table if it doesn't exist
