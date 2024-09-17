@@ -11,6 +11,7 @@ export interface User {
   name: string;
   surname: string;
   role: 'doctor' | 'patient';
+  specialty?: string;
   phone_number: string;
   email?: string;
   appointments?: Appointment[];
