@@ -200,13 +200,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <Box
         as="main"
         ml={isSidebarOpen ? '250px' : '80px'}
-        w="calc(100vw - 250px)"
+        w={isSidebarOpen ? 'calc(100vw - 250px)' : 'calc(100vw - 80px)'}
         h="100vh"
         overflowY="auto"
         transition="margin-left 0.3s ease, width 0.3s ease"
       >
-        {children}
-      </Box>
+  {children}
+</Box>
 
       {/* Modal for Add Appointment */}
       {modalOpen && (
