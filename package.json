@@ -118,7 +118,9 @@
     "react-dom": "^18.2.0",
     "react-icons": "^5.3.0",
     "react-router-dom": "^6.16.0",
-    "source-map-support": "^0.5.21"
+    "sequelize": "^6.37.3",
+    "source-map-support": "^0.5.21",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.3.0",

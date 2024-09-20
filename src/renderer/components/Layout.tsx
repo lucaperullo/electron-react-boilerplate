@@ -1,11 +1,22 @@
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Flex,
   Button,
   VStack,
   Icon,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Input,
+  Select,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 import {
   FaUser,
   FaStethoscope,
@@ -14,14 +25,54 @@ import {
   FaArrowLeft,
   FaArrowRight,
 } from 'react-icons/fa';
-import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
-import DailyViewCalendar from './DailyView'; // Import DailyViewCalendar component
+import dayjs from 'dayjs';
+import { useGlobalState } from '../context/GlobalStateProvider';
+import DailyViewCalendar from './DailyView';
+import PatientsModal from './PatientsModal';
+import DoctorsModal from './DoctorsModal';
+import { User } from '../db/types';
+
+// Function to round up to the nearest 5-minute interval
+const roundUpToNearest5Minutes = (time: dayjs.Dayjs) => {
+  const minutes = time.minute();
+  const roundedMinutes = Math.ceil(minutes / 5) * 5;
+  return time.minute(roundedMinutes).second(0);
+};
+
+// Set the default time to the current time rounded up to the nearest 5-minute interval
+const defaultTime = roundUpToNearest5Minutes(dayjs()).format('HH:mm');
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [appointmentDetails, setAppointmentDetails] = useState({
+    time: '',
+    doctorID: '',
+    patientID: '',
+  });
+  const [doctors, setDoctors] = useState<User[]>([]);
+  const [patients, setPatients] = useState<User[]>([]);
+  const [searchDoctor, setSearchDoctor] = useState('');
+  const [searchPatient, setSearchPatient] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState(dayjs().format('YYYY-MM-DD')); // Default to current date
+  const [appointmentTime, setAppointmentTime] = useState(defaultTime);
+
+  const [isPatientsModalOpen, setPatientsModalOpen] = useState(false);
+  const [isDoctorsModalOpen, setDoctorsModalOpen] = useState(false);
 
   const { users, addAppointment, refreshData } = useGlobalState();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const allUsers = await window.electron.electronAPI.getUsers();
+      setDoctors(allUsers.filter((user) => user.role === 'doctor'));
+      setPatients(allUsers.filter((user) => user.role === 'patient'));
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleAddAppointment = () => {
     setModalOpen(true);
@@ -33,6 +84,32 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setAppointmentDetails((prevDetails) => ({
+      ...prevDetails,
+      [name]: value,
+    }));
+  };
+
+  const handleSearchDoctor = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchDoctor(e.target.value);
+  };
+
+  const handleSearchPatient = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchPatient(e.target.value);
+  };
+
+  const handleSubmitAppointment = async () => {
+    await addAppointment({
+      time: `${appointmentDate} ${appointmentTime}`,
+      doctorID: Number(selectedDoctor),
+      patientID: Number(selectedPatient),
+    });
+    setModalOpen(false);
+    refreshData();
   };
 
   return (
@@ -60,6 +137,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <Icon m={0} display="flex" justifyContent="center" as={FaUser} />
             }
             justifyContent={isSidebarOpen ? 'flex-start' : 'center'}
+            onClick={() => setPatientsModalOpen(true)}
           >
             {isSidebarOpen && 'Patients'}
           </Button>
@@ -75,6 +153,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               />
             }
             justifyContent={isSidebarOpen ? 'flex-start' : 'center'}
+            onClick={() => setDoctorsModalOpen(true)}
           >
             {isSidebarOpen && 'Doctors'}
           </Button>
@@ -140,39 +219,100 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </Box>
 
       {/* Modal for Add Appointment */}
-      {modalOpen && (
-        <>
-          {/* Backdrop */}
-          <Box
-            pos="fixed"
-            top="0"
-            left="0"
-            width="100vw"
-            height="100vh"
-            bg="rgba(0, 0, 0, 0.6)"
-            zIndex="999"
-            onClick={() => setModalOpen(false)}
-          />
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Appointment</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={4} mt={4}>
+              {/* Doctor Search */}
+              <Input
+                placeholder="Search for a doctor"
+                value={searchDoctor}
+                onChange={handleSearchDoctor}
+              />
+              <Select
+                placeholder="Select Doctor"
+                value={selectedDoctor}
+                onChange={(e) => setSelectedDoctor(e.target.value)}
+              >
+                {doctors.length > 0
+                  ? doctors
+                      .filter((doctor) =>
+                        doctor.name.toLowerCase().includes(
+                          (searchDoctor || '').toLowerCase(),
+                        ),
+                      )
+                      .map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          {doctor.name} {doctor.surname}
+                        </option>
+                      ))
+                  : null}
+              </Select>
 
-          {/* Modal */}
-          <Box
-            pos="fixed"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            bg="white"
-            p={6}
-            rounded="md"
-            shadow="lg"
-            width="400px"
-            zIndex="1000"
-          >
-            <h2>Add Appointment</h2>
+              {/* Patient Search */}
+              <Input
+                placeholder="Search for a patient"
+                value={searchPatient}
+                onChange={handleSearchPatient}
+              />
+              <Select
+                placeholder="Select Patient"
+                value={selectedPatient}
+                onChange={(e) => setSelectedPatient(e.target.value)}
+              >
+                {patients.length > 0
+                  ? patients
+                      .filter((patient) =>
+                        patient.name.toLowerCase().includes(
+                          (searchPatient || '').toLowerCase(),
+                        ),
+                      )
+                      .map((patient) => (
+                        <option key={patient.id} value={patient.id}>
+                          {patient.name} {patient.surname}
+                        </option>
+                      ))
+                  : null}
+              </Select>
 
-            {/* Modal content here */}
-          </Box>
-        </>
-      )}
+              <Input
+                type="date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+              />
+
+              <Input
+                type="time"
+                value={appointmentTime}
+                onChange={(e) => setAppointmentTime(e.target.value)}
+              />
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleSubmitAppointment}>
+              Add Appointment
+            </Button>
+            <Button onClick={() => setModalOpen(false)}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Patients Modal */}
+      <PatientsModal
+        isOpen={isPatientsModalOpen}
+        onClose={() => setPatientsModalOpen(false)}
+        patients={patients}
+      />
+
+      {/* Doctors Modal */}
+      <DoctorsModal
+        isOpen={isDoctorsModalOpen}
+        onClose={() => setDoctorsModalOpen(false)}
+        doctors={doctors}
+      />
     </Flex>
   );
 };

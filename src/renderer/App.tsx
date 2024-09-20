@@ -12,7 +12,7 @@ export default function App() {
         <Routes>
           <Route path="/patients" element={<Patients />} />
           <Route path="/doctors" element={<Doctors />} />
-          <Route path="/" element={<div>Welcome to the Agenda App</div>} />
+          <Route path="/" element={<div></div>} />
         </Routes>
       </Layout>
     </Router>

@@ -14,5 +14,5 @@ export interface User {
   specialty?: string;
   phone_number: string;
   email?: string;
-  appointments?: Appointment[];
+  appointments?: Appointment[]; // NOT PRESENT IN THE OTHER type.ts file
 }

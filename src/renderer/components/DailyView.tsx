@@ -1,13 +1,14 @@
-import { useState, forwardRef } from 'react';
+import dayjs from 'dayjs';
 import {
   Box,
-  Grid,
-  GridItem,
-  Text,
-  Button,
   Flex,
+  Button,
+  VStack,
+  Icon,
+  Input,
+  FormControl,
+  FormLabel,
   Select,
-  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -15,84 +16,44 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  Input,
+  Stack,
+  RadioGroup,
+  Radio,
   useDisclosure,
+  IconButton,
+  Grid,
+  GridItem,
+  Text,
 } from '@chakra-ui/react';
-import { FaArrowLeft, FaArrowRight, FaUserPlus } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import {
+  FaUser,
+  FaStethoscope,
+  FaPlus,
+  FaSignOutAlt,
+  FaArrowLeft,
+  FaArrowRight,
+  FaUserPlus,
+} from 'react-icons/fa';
+import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
+import { User } from '../types';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { ChevronDownIcon } from '@chakra-ui/icons';
-import dayjs from 'dayjs';
-import updateLocale from 'dayjs/plugin/updateLocale';
-import { useGlobalState } from '../context/GlobalStateProvider';
-
-dayjs.extend(updateLocale);
-
-const doctors = [
-  'Dr. Triforce',
-  'Dr. Taric',
-  'Dr. Better',
-  'Dr. Than',
-  'Dr. Tryhard',
-  'Dr. Lee Sin',
-  'Dr. XD',
-];
-
-const generateTimeSlots = () => {
-  const startTime = dayjs().hour(8).minute(0);
-  const endTime = dayjs().hour(20).minute(0);
-  const slots = [];
-
-  let currentTime = startTime;
-  while (currentTime.isBefore(endTime) || currentTime.isSame(endTime)) {
-    slots.push(currentTime.format('HH:mm'));
-    currentTime = currentTime.add(15, 'minute');
-  }
-  return slots;
-};
-
-const timeSlots = generateTimeSlots();
 
 const months = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-interface CustomInputProps {
-  value: string;
-  onClick: () => void;
-}
+const timeSlots = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00'
+];
 
-const CustomInput = forwardRef<HTMLButtonElement, CustomInputProps>(
-  ({ value, onClick }, ref) => (
-    <Button
-      onClick={onClick}
-      ref={ref}
-      width="60px"
-      mr={2}
-      textAlign="center"
-      fontWeight="normal"
-      fontSize="md"
-      border="1px solid #e2e8f0"
-      borderRadius="md"
-      bg="white"
-      _hover={{ bg: 'gray.100' }}
-      _focus={{ boxShadow: 'outline' }}
-      rightIcon={<ChevronDownIcon />}
-    >
-      {value}
-    </Button>
-  ),
+const CustomInput = ({ value, onClick }: { value: string, onClick: () => void }) => (
+  <Button onClick={onClick}>{value}</Button>
 );
 
 const DailyViewCalendar = () => {
@@ -100,10 +61,11 @@ const DailyViewCalendar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
 
-  const [newPatient, setNewPatient] = useState({
+  const [newUser, setNewUser] = useState({
     name: '',
     surname: '',
-    role: 'patient' as 'patient', // Explicitly typed to 'patient'
+    role: 'patient' as 'patient' | 'doctor', // Explicitly typed to 'patient' or 'doctor'
+    specialty: '',
     phone_number: '',
     email: '',
   });
@@ -129,20 +91,21 @@ const DailyViewCalendar = () => {
     setSelectedDate(dayjs(selectedDate).year(newYear).toDate());
   };
 
-  const handleAddPatient = async () => {
-    if (!newPatient.name || !newPatient.surname || !newPatient.phone_number) {
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.surname || !newUser.phone_number) {
       alert('Please fill in all required fields.');
       return;
     }
-    const patientWithId = {
-      ...newPatient,
+    const userWithId = {
+      ...newUser,
       id: Date.now(), // Assign a unique ID
     };
-    await addUser(patientWithId); // Add the patient using context function
-    setNewPatient({
+    await addUser(userWithId); // Add the user using context function
+    setNewUser({
       name: '',
       surname: '',
       role: 'patient',
+      specialty: '',
       phone_number: '',
       email: '',
     });
@@ -151,8 +114,15 @@ const DailyViewCalendar = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewPatient((prev) => ({ ...prev, [name]: value }));
+    setNewUser((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleRoleChange = (value: 'patient' | 'doctor') => {
+    setNewUser((prev) => ({ ...prev, role: value }));
+  };
+
+  // Filter users to get only doctors
+  const doctors = users.filter(user => user.role === 'doctor');
 
   return (
     <Box w="100%">
@@ -196,7 +166,7 @@ const DailyViewCalendar = () => {
               mr={2}
             >
               {months.map((month: string, index: number) => (
-                <option key={month} value={index}>
+                <option key={index} value={index}>
                   {month}
                 </option>
               ))}
@@ -221,7 +191,7 @@ const DailyViewCalendar = () => {
           </Flex>
 
           <IconButton
-            aria-label="Add Patient"
+            aria-label="Add User"
             icon={<FaUserPlus />}
             colorScheme="teal"
             onClick={onOpen}
@@ -250,7 +220,7 @@ const DailyViewCalendar = () => {
 
           {doctors.map((doctor) => (
             <GridItem
-              key={doctor}
+              key={doctor.id}
               position="sticky"
               top="47px"
               bg="white"
@@ -258,7 +228,7 @@ const DailyViewCalendar = () => {
               width="200px"
             >
               <Text fontWeight="bold" textAlign="center">
-                {doctor}
+                {doctor.name}
               </Text>
             </GridItem>
           ))}
@@ -277,15 +247,7 @@ const DailyViewCalendar = () => {
               </GridItem>
 
               {doctors.map((doctor) => (
-                <GridItem
-                  key={`${doctor}-${time}`}
-                  border="1px solid gray"
-                  p={2}
-                  textAlign="center"
-                  width="200px"
-                >
-                  Available
-                </GridItem>
+                <GridItem key={`${time}-${doctor.id}`} />
               ))}
             </>
           ))}
@@ -295,41 +257,60 @@ const DailyViewCalendar = () => {
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add New Patient</ModalHeader>
+          <ModalHeader>Add New User</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
+            <RadioGroup
+              onChange={handleRoleChange}
+              value={newUser.role}
+              mb={4}
+            >
+              <Stack direction="row">
+                <Radio value="patient">Patient</Radio>
+                <Radio value="doctor">Doctor</Radio>
+              </Stack>
+            </RadioGroup>
             <Input
               placeholder="Name"
               name="name"
-              value={newPatient.name}
+              value={newUser.name}
               onChange={handleInputChange}
               mb={4}
             />
             <Input
               placeholder="Surname"
               name="surname"
-              value={newPatient.surname}
+              value={newUser.surname}
               onChange={handleInputChange}
               mb={4}
             />
+            {newUser.role === 'doctor' && (
+              <Input
+                placeholder="Specialty"
+                name="specialty"
+                value={newUser.specialty}
+                onChange={handleInputChange}
+                mb={4}
+              />
+            )}
             <Input
               placeholder="Phone Number"
               name="phone_number"
-              value={newPatient.phone_number}
+              value={newUser.phone_number}
               onChange={handleInputChange}
               mb={4}
             />
             <Input
               placeholder="Email (Optional)"
               name="email"
-              value={newPatient.email}
+              value={newUser.email}
               onChange={handleInputChange}
             />
           </ModalBody>
 
           <ModalFooter>
-            <Button colorScheme="blue" onClick={handleAddPatient}>
-              Add Patient
+            <Button colorScheme="blue" onClick={handleAddUser}>
+              Add User
             </Button>
           </ModalFooter>
         </ModalContent>
