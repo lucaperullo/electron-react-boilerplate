@@ -1,10 +1,12 @@
-import { User, Appointment } from './types';
+import { User, Appointment, Availability } from './types';
 
 interface ElectronAPI {
   getUsers: () => Promise<User[]>;
   getAppointments: () => Promise<Appointment[]>;
   addAppointment: (appointment: Appointment) => Promise<void>;
   addUser: (user: User) => Promise<void>;
+  saveUsers: (users: User[]) => Promise<void>;
+  addAvailability: (availability: Availability) => Promise<void>;
   sendMessage: (channel: string, ...args: unknown[]) => void;
   once: (channel: string, listener: (...args: unknown[]) => void) => void;
 }

@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
-import { User, Appointment } from './database';
-import { User as UserType, Appointment as AppointmentType } from './types';
+import { User, Appointment, Availability } from './database';
+import { User as UserType, Appointment as AppointmentType, Availability as AvailabilityType } from './types';
 
 // Get all users
 ipcMain.handle('get-users', async () => {
@@ -32,5 +32,24 @@ ipcMain.handle('add-appointment', async (event, appointment: AppointmentType) =>
     return newAppointment;
   } else {
     throw new Error('Doctor or Patient not found.');
+  }
+});
+
+// Add availability for a doctor
+ipcMain.handle('add-availability', async (event, availability: AvailabilityType) => {
+  const doctor = await User.findOne({ where: { id: availability.doctorID, role: 'doctor' } });
+
+  if (doctor) {
+    const newAvailability = await Availability.create({
+      doctorID: doctor.id,
+      date: availability.date,
+      startTime: availability.startTime,
+      endTime: availability.endTime,
+      duration: availability.duration,
+    });
+
+    return newAvailability;
+  } else {
+    throw new Error('Doctor not found.');
   }
 });

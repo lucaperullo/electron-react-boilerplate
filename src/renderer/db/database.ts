@@ -1,7 +1,7 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 import path from 'path';
 import { app } from 'electron';
-import { User as UserType, Appointment as AppointmentType } from './types'; // Ensure this path is correct
+import { User as UserType, Appointment as AppointmentType, Availability as AvailabilityType } from './types'; // Ensure this path is correct
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -10,6 +10,7 @@ const sequelize = new Sequelize({
 
 interface UserCreationAttributes extends Optional<UserType, 'id'> {}
 interface AppointmentCreationAttributes extends Optional<AppointmentType, 'id'> {}
+interface AvailabilityCreationAttributes extends Optional<AvailabilityType, 'id'> {}
 
 class User extends Model<UserType, UserCreationAttributes> implements UserType {
   public id!: number;
@@ -27,6 +28,15 @@ class Appointment extends Model<AppointmentType, AppointmentCreationAttributes> 
   public time!: string;
   public doctorID!: number;
   public patientID!: number;
+}
+
+class Availability extends Model<AvailabilityType, AvailabilityCreationAttributes> implements AvailabilityType {
+  public id!: number;
+  public doctorID!: number;
+  public date!: string;
+  public startTime!: string;
+  public endTime!: string;
+  public duration!: number;
 }
 
 User.init(
@@ -91,11 +101,48 @@ Appointment.init(
   }
 );
 
+Availability.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    doctorID: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    startTime: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    endTime: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    duration: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Availability',
+  }
+);
+
 User.hasMany(Appointment, { foreignKey: 'doctorID' });
 User.hasMany(Appointment, { foreignKey: 'patientID' });
 Appointment.belongsTo(User, { as: 'Doctor', foreignKey: 'doctorID' });
 Appointment.belongsTo(User, { as: 'Patient', foreignKey: 'patientID' });
 
+User.hasMany(Availability, { foreignKey: 'doctorID' });
+Availability.belongsTo(User, { as: 'Doctor', foreignKey: 'doctorID' });
+
 sequelize.sync();
 
-export { sequelize, User, Appointment };
+export { sequelize, User, Appointment, Availability };

@@ -1,4 +1,4 @@
-// src/context/GlobalStateContext.tsx
+// src/context/GlobalStateProvider.tsx
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, Appointment } from '../types';
@@ -9,6 +9,7 @@ interface GlobalStateContextProps {
   refreshData: () => void;
   addUser: (newUser: User) => Promise<void>;
   addAppointment: (newAppointment: Appointment) => Promise<void>;
+  addAvailability: (doctorID: number, date: string, time: string) => Promise<void>; // Add this line
 }
 
 const GlobalStateContext = createContext<GlobalStateContextProps | undefined>(
@@ -23,7 +24,6 @@ export const GlobalStateProvider = ({
   const [users, setUsers] = useState<User[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // Function to fetch users and appointments from local DB
   const refreshData = async () => {
     const fetchedUsers = await window.electron.electronAPI.getUsers();
     const fetchedAppointments =
@@ -32,32 +32,40 @@ export const GlobalStateProvider = ({
     setAppointments(fetchedAppointments);
   };
 
-  // Function to add a new user
   const addUser = async (newUser: User) => {
     await window.electron.electronAPI.addUser(newUser);
     refreshData();
   };
 
-  // Function to add a new appointment
   const addAppointment = async (newAppointment: Appointment) => {
     await window.electron.electronAPI.addAppointment(newAppointment);
     refreshData();
   };
 
-  useEffect(() => {
+  const addAvailability = async (doctorID: number, date: string, time: string) => {
+    const updatedUsers = users.map(user => {
+      if (user.id === doctorID) {
+        return {
+          ...user,
+          availability: [...(user.availability || []), { date, time }],
+        };
+      }
+      return user;
+    });
+    setUsers(updatedUsers);
+    await window.electron.electronAPI.saveUsers(updatedUsers);
     refreshData();
-  }, []);
+  };
 
   return (
     <GlobalStateContext.Provider
-      value={{ users, appointments, refreshData, addUser, addAppointment }}
+      value={{ users, appointments, refreshData, addUser, addAppointment, addAvailability }} // Add addAvailability here
     >
       {children}
     </GlobalStateContext.Provider>
   );
 };
 
-// Custom hook to use the GlobalStateContext
 export const useGlobalState = () => {
   const context = useContext(GlobalStateContext);
   if (!context) {
