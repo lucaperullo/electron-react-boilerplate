@@ -1,15 +1,13 @@
-// src/context/GlobalStateProvider.tsx
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { User, Appointment } from '../types';
+import { User, Appointment, Availability } from '../types';
 
 interface GlobalStateContextProps {
   users: User[];
   appointments: Appointment[];
   refreshData: () => void;
   addUser: (newUser: User) => Promise<void>;
-  addAppointment: (newAppointment: Appointment) => Promise<void>;
-  addAvailability: (doctorID: number, date: string, time: string) => Promise<void>; // Add this line
+  addAppointment: (newAppointment: { time: string; doctorID: number; patientID: number }) => Promise<void>;
+  addAvailability: (doctorID: number, date: string, startTime: string, endTime: string, duration: number) => Promise<void>;
 }
 
 const GlobalStateContext = createContext<GlobalStateContextProps | undefined>(
@@ -37,17 +35,21 @@ export const GlobalStateProvider = ({
     refreshData();
   };
 
-  const addAppointment = async (newAppointment: Appointment) => {
-    await window.electron.electronAPI.addAppointment(newAppointment);
+  const addAppointment = async (newAppointment: { time: string; doctorID: number; patientID: number }) => {
+    const appointment: Appointment = {
+      id: Date.now(), // Generate a temporary ID
+      ...newAppointment,
+    };
+    await window.electron.electronAPI.addAppointment(appointment);
     refreshData();
   };
 
-  const addAvailability = async (doctorID: number, date: string, time: string) => {
+  const addAvailability = async (doctorID: number, date: string, startTime: string, endTime: string, duration: number) => {
     const updatedUsers = users.map(user => {
       if (user.id === doctorID) {
         return {
           ...user,
-          availability: [...(user.availability || []), { date, time }],
+          availability: [...(user.availability || []), { id: Date.now(), doctorID, date, startTime, endTime, duration }],
         };
       }
       return user;
@@ -59,7 +61,7 @@ export const GlobalStateProvider = ({
 
   return (
     <GlobalStateContext.Provider
-      value={{ users, appointments, refreshData, addUser, addAppointment, addAvailability }} // Add addAvailability here
+      value={{ users, appointments, refreshData, addUser, addAppointment, addAvailability }}
     >
       {children}
     </GlobalStateContext.Provider>

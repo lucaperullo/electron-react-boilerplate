@@ -1,5 +1,3 @@
-// src/components/Layout.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -7,17 +5,6 @@ import {
   Button,
   VStack,
   Icon,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Input,
-  Select,
-  Stack,
-  Text,
 } from '@chakra-ui/react';
 import {
   FaUser,
@@ -34,33 +21,14 @@ import DailyViewCalendar from './DailyView';
 import PatientsModal from './PatientsModal';
 import DoctorsModal from './DoctorsModal';
 import DoctorAvailabilityModal from './DoctorsAvailabilityModal';
+import AddAppointmentModal from './AddAppointmentModal';
 import { User } from '../db/types';
-
-const roundUpToNearest5Minutes = (time: dayjs.Dayjs) => {
-  const minutes = time.minute();
-  const roundedMinutes = Math.ceil(minutes / 5) * 5;
-  return time.minute(roundedMinutes).second(0);
-};
-
-const defaultTime = roundUpToNearest5Minutes(dayjs()).format('HH:mm');
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [appointmentDetails, setAppointmentDetails] = useState({
-    time: '',
-    doctorID: '',
-    patientID: '',
-  });
   const [doctors, setDoctors] = useState<User[]>([]);
   const [patients, setPatients] = useState<User[]>([]);
-  const [searchDoctor, setSearchDoctor] = useState('');
-  const [searchPatient, setSearchPatient] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState('');
-  const [appointmentDate, setAppointmentDate] = useState(dayjs().format('YYYY-MM-DD'));
-  const [appointmentTime, setAppointmentTime] = useState(defaultTime);
-
   const [isPatientsModalOpen, setPatientsModalOpen] = useState(false);
   const [isDoctorsModalOpen, setDoctorsModalOpen] = useState(false);
   const [isDoctorAvailabilityModalOpen, setDoctorAvailabilityModalOpen] = useState(false);
@@ -87,33 +55,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setAppointmentDetails((prevDetails) => ({
-      ...prevDetails,
-      [name]: value,
-    }));
-  };
-
-  const handleSearchDoctor = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchDoctor(e.target.value);
-  };
-
-  const handleSearchPatient = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchPatient(e.target.value);
-  };
-
-  const handleSubmitAppointment = async () => {
-    await addAppointment({
-      id: Date.now(), // Generate a unique ID using the current timestamp
-      time: `${appointmentDate} ${appointmentTime}`,
-      doctorID: Number(selectedDoctor),
-      patientID: Number(selectedPatient),
-    });
-    setModalOpen(false);
-    refreshData();
   };
 
   return (
@@ -200,51 +141,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {children}
       </Box>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Add Appointment</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={4} mt={4}>
-              <Input placeholder="Search for a doctor" value={searchDoctor} onChange={handleSearchDoctor} />
-              <Select placeholder="Select Doctor" value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)}>
-                {doctors.length > 0
-                  ? doctors
-                      .filter((doctor) => doctor.name.toLowerCase().includes((searchDoctor || '').toLowerCase()))
-                      .map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.name} {doctor.surname}
-                        </option>
-                      ))
-                  : null}
-              </Select>
-
-              <Input placeholder="Search for a patient" value={searchPatient} onChange={handleSearchPatient} />
-              <Select placeholder="Select Patient" value={selectedPatient} onChange={(e) => setSelectedPatient(e.target.value)}>
-                {patients.length > 0
-                  ? patients
-                      .filter((patient) => patient.name.toLowerCase().includes((searchPatient || '').toLowerCase()))
-                      .map((patient) => (
-                        <option key={patient.id} value={patient.id}>
-                          {patient.name} {patient.surname}
-                        </option>
-                      ))
-                  : null}
-              </Select>
-
-              <Input type="date" value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)} />
-              <Input type="time" value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} />
-            </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={handleSubmitAppointment}>
-              Add Appointment
-            </Button>
-            <Button onClick={() => setModalOpen(false)}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AddAppointmentModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        doctors={doctors}
+        patients={patients}
+        addAppointment={addAppointment}
+        refreshData={refreshData}
+      />
 
       <PatientsModal isOpen={isPatientsModalOpen} onClose={() => setPatientsModalOpen(false)} patients={patients} />
       <DoctorsModal isOpen={isDoctorsModalOpen} onClose={() => setDoctorsModalOpen(false)} doctors={doctors} />

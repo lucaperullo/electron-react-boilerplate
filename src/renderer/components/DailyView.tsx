@@ -36,7 +36,7 @@ import {
   FaUserPlus,
 } from 'react-icons/fa';
 import { useGlobalState } from '../context/GlobalStateProvider'; // Import GlobalState context
-import { User } from '../types';
+import { User, Appointment, Availability } from '../types';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -57,7 +57,7 @@ const CustomInput = ({ value, onClick }: { value: string, onClick: () => void })
 );
 
 const DailyViewCalendar = () => {
-  const { users, addUser, refreshData } = useGlobalState(); // Use global state
+  const { users, appointments, addUser, refreshData } = useGlobalState(); // Use global state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
 
@@ -121,8 +121,21 @@ const DailyViewCalendar = () => {
     setNewUser((prev) => ({ ...prev, role: value }));
   };
 
-  // Filter users to get only doctors
-  const doctors = users.filter(user => user.role === 'doctor');
+  // Filter doctors based on their availability and appointments for the selected day
+  const filteredDoctors = users.filter(user => {
+    if (user.role !== 'doctor') return false;
+    const hasAvailability = user.availability?.some(avail => dayjs(avail.date).isSame(selectedDate, 'day'));
+    const hasAppointments = appointments.some(app => app.doctorID === user.id && dayjs(app.time).isSame(selectedDate, 'day'));
+    return hasAvailability || hasAppointments;
+  });
+
+  const getAvailabilityForDoctor = (doctorID: number) => {
+    return users.find(user => user.id === doctorID)?.availability?.filter(avail => dayjs(avail.date).isSame(selectedDate, 'day')) || [];
+  };
+
+  const getAppointmentsForDoctor = (doctorID: number) => {
+    return appointments.filter(app => app.doctorID === doctorID && dayjs(app.time).isSame(selectedDate, 'day'));
+  };
 
   return (
     <Box w="100%">
@@ -201,9 +214,9 @@ const DailyViewCalendar = () => {
 
       <Box overflowX="auto">
         <Grid
-          templateColumns={`repeat(${doctors.length + 1}, 1fr)`}
+          templateColumns={`repeat(${filteredDoctors.length + 1}, 1fr)`}
           gap={4}
-          minWidth={`${(doctors.length + 1) * 200}px`}
+          minWidth={`${(filteredDoctors.length + 1) * 200}px`}
         >
           <GridItem
             position="sticky"
@@ -213,12 +226,12 @@ const DailyViewCalendar = () => {
             zIndex="101"
             borderRight="1px solid #e2e8f0"
           >
-            <Text fontWeight="bold" textAlign="center">
+            <Text fontWeight="bold" textAlign="left" pl={2}>
               Time
-            </Text>
+            </Text> {/* Added padding-left */}
           </GridItem>
 
-          {doctors.map((doctor) => (
+          {filteredDoctors.map((doctor) => (
             <GridItem
               key={doctor.id}
               position="sticky"
@@ -243,12 +256,22 @@ const DailyViewCalendar = () => {
                 zIndex="99"
                 borderRight="1px solid #e2e8f0"
               >
-                <Text textAlign="center">{time}</Text>
+                <Text textAlign="left" pl={2}>{time}</Text> {/* Added padding-left */}
               </GridItem>
 
-              {doctors.map((doctor) => (
-                <GridItem key={`${time}-${doctor.id}`} />
-              ))}
+              {filteredDoctors.map((doctor) => {
+                const availability = getAvailabilityForDoctor(doctor.id);
+                const appointments = getAppointmentsForDoctor(doctor.id);
+                const isAvailable = availability.some(avail => dayjs(avail.startTime, 'HH:mm').isSame(dayjs(time, 'HH:mm')));
+                const hasAppointment = appointments.some(app => dayjs(app.time, 'HH:mm').isSame(dayjs(time, 'HH:mm')));
+
+                return (
+                  <GridItem
+                    key={`${time}-${doctor.id}`}
+                    bg={hasAppointment ? 'red.200' : isAvailable ? 'green.200' : 'white'}
+                  />
+                );
+              })}
             </>
           ))}
         </Grid>

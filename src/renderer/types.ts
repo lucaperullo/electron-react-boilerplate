@@ -6,6 +6,7 @@ export interface User {
   specialty?: string;
   phone_number: string;
   email?: string;
+  availability?: Availability[]; // Add this line
 }
 
 export interface Appointment {
