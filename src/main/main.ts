@@ -64,6 +64,14 @@ ipcMain.handle('add-appointment', async (_event, appointment) => {
   return appointment;
 });
 
+// IPC Handler to save users
+ipcMain.handle('save-users', async (_event, users) => {
+  const data = loadData();
+  data.users = users;
+  saveData(data);
+  return users;
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();

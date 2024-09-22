@@ -1,5 +1,3 @@
-// Disable no-unused-vars, broken for spread args
-/* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export type Channels = 'ipc-example';
@@ -25,11 +23,14 @@ const electronHandler = {
 
   // Exposing other APIs to the renderer process
   electronAPI: {
-    getUsers: () => ipcRenderer.invoke('get-users'), // Replace with the correct IPC channel
-    getAppointments: () => ipcRenderer.invoke('get-appointments'), // Replace with the correct IPC channel
+    getUsers: () => ipcRenderer.invoke('get-users'),
+    getAppointments: () => ipcRenderer.invoke('get-appointments'),
     addAppointment: (appointment: any) =>
-      ipcRenderer.invoke('add-appointment', appointment), // Replace with the correct IPC channel
-    addUser: (user: any) => ipcRenderer.invoke('add-user', user), // Replace with the correct IPC channel
+      ipcRenderer.invoke('add-appointment', appointment),
+    addUser: (user: any) => ipcRenderer.invoke('add-user', user),
+    addAvailability: (availability: any) =>
+      ipcRenderer.invoke('add-availability', availability),
+    saveUsers: (users: any) => ipcRenderer.invoke('save-users', users), // Add this line
     sendMessage: (channel: string, ...args: unknown[]) =>
       ipcRenderer.send(channel, ...args),
     once: (channel: string, func: (...args: unknown[]) => void) => {
