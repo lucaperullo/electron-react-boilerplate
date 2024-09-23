@@ -22,13 +22,13 @@ export const GlobalStateProvider = ({
   const [users, setUsers] = useState<User[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  const refreshData = async () => {
-    const fetchedUsers = await window.electron.electronAPI.getUsers();
-    const fetchedAppointments =
-      await window.electron.electronAPI.getAppointments();
-    setUsers(fetchedUsers);
-    setAppointments(fetchedAppointments);
-  };
+const refreshData = async () => {
+  const fetchedUsers = await window.electron.electronAPI.getUsers();
+  const fetchedAppointments = await window.electron.electronAPI.getAppointments();
+  setUsers(fetchedUsers);
+  setAppointments(fetchedAppointments);
+  console.log('Data refreshed:', fetchedUsers, fetchedAppointments); // Add this line
+};
 
   const addUser = async (newUser: User) => {
     await window.electron.electronAPI.addUser(newUser);
@@ -56,6 +56,7 @@ export const GlobalStateProvider = ({
     });
     setUsers(updatedUsers);
     await window.electron.electronAPI.saveUsers(updatedUsers);
+    console.log('Availability added:', updatedUsers); // Add this line
     refreshData();
   };
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import dayjs from 'dayjs';
 import {
   Box,
@@ -39,6 +40,7 @@ import { useGlobalState } from '../context/GlobalStateProvider'; // Import Globa
 import { User, Appointment, Availability } from '../types';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import AddUserModal from './AddUserModal'; // Import the new modal component
 
 const months = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -52,23 +54,14 @@ const timeSlots = [
   '17:00', '17:30', '18:00'
 ];
 
-const CustomInput = ({ value, onClick }: { value: string, onClick: () => void }) => (
-  <Button onClick={onClick}>{value}</Button>
-);
+const CustomInput = React.forwardRef<HTMLButtonElement, { value: string, onClick: () => void }>(({ value, onClick }, ref) => (
+  <Button onClick={onClick} ref={ref}>{value}</Button>
+));
 
 const DailyViewCalendar = () => {
   const { users, appointments, addUser, refreshData } = useGlobalState(); // Use global state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
-
-  const [newUser, setNewUser] = useState({
-    name: '',
-    surname: '',
-    role: 'patient' as 'patient' | 'doctor', // Explicitly typed to 'patient' or 'doctor'
-    specialty: '',
-    phone_number: '',
-    email: '',
-  });
 
   const currentYear = dayjs().year();
   const years = Array.from(
@@ -91,50 +84,25 @@ const DailyViewCalendar = () => {
     setSelectedDate(dayjs(selectedDate).year(newYear).toDate());
   };
 
-  const handleAddUser = async () => {
-    if (!newUser.name || !newUser.surname || !newUser.phone_number) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-    const userWithId = {
-      ...newUser,
-      id: Date.now(), // Assign a unique ID
-    };
-    await addUser(userWithId); // Add the user using context function
-    setNewUser({
-      name: '',
-      surname: '',
-      role: 'patient',
-      specialty: '',
-      phone_number: '',
-      email: '',
-    });
-    onClose();
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewUser((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleRoleChange = (value: 'patient' | 'doctor') => {
-    setNewUser((prev) => ({ ...prev, role: value }));
-  };
-
   // Filter doctors based on their availability and appointments for the selected day
   const filteredDoctors = users.filter(user => {
     if (user.role !== 'doctor') return false;
     const hasAvailability = user.availability?.some(avail => dayjs(avail.date).isSame(selectedDate, 'day'));
     const hasAppointments = appointments.some(app => app.doctorID === user.id && dayjs(app.time).isSame(selectedDate, 'day'));
+    console.log('Filtering doctors:', user, hasAvailability, hasAppointments); // Add this line
     return hasAvailability || hasAppointments;
   });
-
+  
   const getAvailabilityForDoctor = (doctorID: number) => {
-    return users.find(user => user.id === doctorID)?.availability?.filter(avail => dayjs(avail.date).isSame(selectedDate, 'day')) || [];
+    const availability = users.find(user => user.id === doctorID)?.availability?.filter(avail => dayjs(avail.date).isSame(selectedDate, 'day')) || [];
+    console.log('Getting availability for doctor:', doctorID, availability); // Add this line
+    return availability;
   };
-
+  
   const getAppointmentsForDoctor = (doctorID: number) => {
-    return appointments.filter(app => app.doctorID === doctorID && dayjs(app.time).isSame(selectedDate, 'day'));
+    const appointmentsForDoctor = appointments.filter(app => app.doctorID === doctorID && dayjs(app.time).isSame(selectedDate, 'day'));
+    console.log('Getting appointments for doctor:', doctorID, appointmentsForDoctor); // Add this line
+    return appointmentsForDoctor;
   };
 
   return (
@@ -247,7 +215,7 @@ const DailyViewCalendar = () => {
           ))}
 
           {timeSlots.map((time) => (
-            <>
+            <React.Fragment key={time}>
               <GridItem
                 key={time}
                 position="sticky"
@@ -272,72 +240,12 @@ const DailyViewCalendar = () => {
                   />
                 );
               })}
-            </>
+            </React.Fragment>
           ))}
         </Grid>
       </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Add New User</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <RadioGroup
-              onChange={handleRoleChange}
-              value={newUser.role}
-              mb={4}
-            >
-              <Stack direction="row">
-                <Radio value="patient">Patient</Radio>
-                <Radio value="doctor">Doctor</Radio>
-              </Stack>
-            </RadioGroup>
-            <Input
-              placeholder="Name"
-              name="name"
-              value={newUser.name}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            <Input
-              placeholder="Surname"
-              name="surname"
-              value={newUser.surname}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            {newUser.role === 'doctor' && (
-              <Input
-                placeholder="Specialty"
-                name="specialty"
-                value={newUser.specialty}
-                onChange={handleInputChange}
-                mb={4}
-              />
-            )}
-            <Input
-              placeholder="Phone Number"
-              name="phone_number"
-              value={newUser.phone_number}
-              onChange={handleInputChange}
-              mb={4}
-            />
-            <Input
-              placeholder="Email (Optional)"
-              name="email"
-              value={newUser.email}
-              onChange={handleInputChange}
-            />
-          </ModalBody>
-
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={handleAddUser}>
-              Add User
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AddUserModal isOpen={isOpen} onClose={onClose} addUser={addUser} refreshData={refreshData} />
     </Box>
   );
 };
