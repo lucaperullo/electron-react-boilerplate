@@ -25,14 +25,12 @@ const electronHandler = {
   electronAPI: {
     getUsers: () => ipcRenderer.invoke('get-users'),
     getAppointments: () => ipcRenderer.invoke('get-appointments'),
-    addAppointment: (appointment: any) =>
-      ipcRenderer.invoke('add-appointment', appointment),
+    getAvailabilities: () => ipcRenderer.invoke('get-availabilities'), // Ensure this line is present
+    addAppointment: (appointment: any) => ipcRenderer.invoke('add-appointment', appointment),
     addUser: (user: any) => ipcRenderer.invoke('add-user', user),
-    addAvailability: (availability: any) =>
-      ipcRenderer.invoke('add-availability', availability),
-    saveUsers: (users: any) => ipcRenderer.invoke('save-users', users), // Add this line
-    sendMessage: (channel: string, ...args: unknown[]) =>
-      ipcRenderer.send(channel, ...args),
+    addAvailability: (availability: any) => ipcRenderer.invoke('add-availability', availability), // Ensure this line is present
+    saveUsers: (users: any) => ipcRenderer.invoke('save-users', users),
+    sendMessage: (channel: string, ...args: unknown[]) => ipcRenderer.send(channel, ...args),
     once: (channel: string, func: (...args: unknown[]) => void) => {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },

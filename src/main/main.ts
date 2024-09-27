@@ -14,7 +14,7 @@ const loadData = () => {
   if (!fs.existsSync(dataFilePath)) {
     fs.writeFileSync(
       dataFilePath,
-      JSON.stringify({ users: [], appointments: [] }, null, 2),
+      JSON.stringify({ users: [], appointments: [], availabilities: [] }, null, 2),
     );
   }
   const data = fs.readFileSync(dataFilePath, 'utf-8');
@@ -48,6 +48,12 @@ ipcMain.handle('get-appointments', async () => {
   return data.appointments;
 });
 
+// IPC Handler to get availabilities
+ipcMain.handle('get-availabilities', async () => {
+  const data = loadData();
+  return data.availabilities || [];
+});
+
 // IPC Handler to add a user
 ipcMain.handle('add-user', async (_event, user) => {
   const data = loadData();
@@ -62,6 +68,15 @@ ipcMain.handle('add-appointment', async (_event, appointment) => {
   data.appointments.push(appointment);
   saveData(data);
   return appointment;
+});
+
+// IPC Handler to add availability
+ipcMain.handle('add-availability', async (_event, availability) => {
+  const data = loadData();
+  data.availabilities = data.availabilities || [];
+  data.availabilities.push(availability);
+  saveData(data);
+  return availability;
 });
 
 // IPC Handler to save users

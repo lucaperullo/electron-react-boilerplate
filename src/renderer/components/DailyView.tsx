@@ -59,7 +59,7 @@ const CustomInput = React.forwardRef<HTMLButtonElement, { value: string, onClick
 ));
 
 const DailyViewCalendar = () => {
-  const { users, appointments, addUser, refreshData } = useGlobalState(); // Use global state
+  const { users, appointments, availabilities, addUser, refreshData } = useGlobalState(); // Use global state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedDate, setSelectedDate] = useState(dayjs().toDate());
 
@@ -94,8 +94,7 @@ const DailyViewCalendar = () => {
   });
   
   const getAvailabilityForDoctor = (doctorID: number) => {
-    const availability = users.find(user => user.id === doctorID)?.availability?.filter(avail => dayjs(avail.date).isSame(selectedDate, 'day')) || [];
-    console.log('Getting availability for doctor:', doctorID, availability); // Add this line
+    const availability = availabilities.filter(avail => avail.doctorID === doctorID && dayjs(avail.date).isSame(selectedDate, 'day'));
     return availability;
   };
   

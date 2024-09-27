@@ -4,6 +4,7 @@ import { User, Appointment, Availability } from '../types';
 interface GlobalStateContextProps {
   users: User[];
   appointments: Appointment[];
+  availabilities: Availability[];
   refreshData: () => void;
   addUser: (newUser: User) => Promise<void>;
   addAppointment: (newAppointment: { time: string; doctorID: number; patientID: number }) => Promise<void>;
@@ -21,14 +22,17 @@ export const GlobalStateProvider = ({
 }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [availabilities, setAvailabilities] = useState<Availability[]>([]);
 
-const refreshData = async () => {
-  const fetchedUsers = await window.electron.electronAPI.getUsers();
-  const fetchedAppointments = await window.electron.electronAPI.getAppointments();
-  setUsers(fetchedUsers);
-  setAppointments(fetchedAppointments);
-  console.log('Data refreshed:', fetchedUsers, fetchedAppointments); // Add this line
-};
+  const refreshData = async () => {
+    const fetchedUsers = await window.electron.electronAPI.getUsers();
+    const fetchedAppointments = await window.electron.electronAPI.getAppointments();
+    const fetchedAvailabilities = await window.electron.electronAPI.getAvailabilities();
+    setUsers(fetchedUsers);
+    setAppointments(fetchedAppointments);
+    setAvailabilities(fetchedAvailabilities);
+    console.log('Data refreshed:', fetchedUsers, fetchedAppointments, fetchedAvailabilities);
+  };
 
   const addUser = async (newUser: User) => {
     await window.electron.electronAPI.addUser(newUser);
@@ -45,24 +49,26 @@ const refreshData = async () => {
   };
 
   const addAvailability = async (doctorID: number, date: string, startTime: string, endTime: string, duration: number) => {
-    const updatedUsers = users.map(user => {
-      if (user.id === doctorID) {
-        return {
-          ...user,
-          availability: [...(user.availability || []), { id: Date.now(), doctorID, date, startTime, endTime, duration }],
-        };
-      }
-      return user;
-    });
-    setUsers(updatedUsers);
-    await window.electron.electronAPI.saveUsers(updatedUsers);
-    console.log('Availability added:', updatedUsers); // Add this line
-    refreshData();
+    const availability: Availability = {
+      id: Date.now(),
+      doctorID,
+      date,
+      startTime,
+      endTime,
+      duration,
+    };
+    await window.electron.electronAPI.addAvailability(availability);
+    const updatedAvailabilities = await window.electron.electronAPI.getAvailabilities();
+    setAvailabilities(updatedAvailabilities);
   };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
 
   return (
     <GlobalStateContext.Provider
-      value={{ users, appointments, refreshData, addUser, addAppointment, addAvailability }}
+      value={{ users, appointments, availabilities, refreshData, addUser, addAppointment, addAvailability }}
     >
       {children}
     </GlobalStateContext.Provider>
