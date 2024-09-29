@@ -152,7 +152,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
       <PatientsModal isOpen={isPatientsModalOpen} onClose={() => setPatientsModalOpen(false)} patients={patients} />
       <DoctorsModal isOpen={isDoctorsModalOpen} onClose={() => setDoctorsModalOpen(false)} doctors={doctors} />
-      <DoctorAvailabilityModal isOpen={isDoctorAvailabilityModalOpen} onClose={() => setDoctorAvailabilityModalOpen(false)} doctors={doctors} addAvailability={addAvailability} />
+      <DoctorAvailabilityModal 
+        isOpen={isDoctorAvailabilityModalOpen} 
+        onClose={() => setDoctorAvailabilityModalOpen(false)} 
+        doctors={doctors} 
+        addAvailability={addAvailability} 
+        refreshData={refreshData} // Ensure refreshData is passed here
+      />
     </Flex>
   );
 };

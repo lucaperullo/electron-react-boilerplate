@@ -58,8 +58,7 @@ export const GlobalStateProvider = ({
       duration,
     };
     await window.electron.electronAPI.addAvailability(availability);
-    const updatedAvailabilities = await window.electron.electronAPI.getAvailabilities();
-    setAvailabilities(updatedAvailabilities);
+    await refreshData(); // Ensure data is refreshed after adding availability
   };
 
   useEffect(() => {

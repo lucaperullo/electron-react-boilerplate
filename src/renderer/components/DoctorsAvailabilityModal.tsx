@@ -11,7 +11,6 @@ import {
   VStack,
   Select,
   Input,
-  Text,
 } from '@chakra-ui/react';
 import { User } from '../db/types';
 import dayjs from 'dayjs';
@@ -20,19 +19,21 @@ interface DoctorAvailabilityModalProps {
   isOpen: boolean;
   onClose: () => void;
   doctors: User[];
-  addAvailability: (doctorID: number, date: string, startTime: string, endTime: string, duration: number) => void;
+  addAvailability: (doctorID: number, date: string, startTime: string, endTime: string, duration: number) => Promise<void>;
+  refreshData: () => void;
 }
 
-const DoctorAvailabilityModal: React.FC<DoctorAvailabilityModalProps> = ({ isOpen, onClose, doctors, addAvailability }) => {
+const DoctorAvailabilityModal: React.FC<DoctorAvailabilityModalProps> = ({ isOpen, onClose, doctors, addAvailability, refreshData }) => {
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [availabilityDate, setAvailabilityDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
   const [appointmentDuration, setAppointmentDuration] = useState(30);
 
-  const handleSubmit = () => {
-    addAvailability(Number(selectedDoctor), availabilityDate, startTime, endTime, appointmentDuration);
+  const handleSubmit = async () => {
+    await addAvailability(Number(selectedDoctor), availabilityDate, startTime, endTime, appointmentDuration);
     onClose();
+    refreshData();
   };
 
   return (

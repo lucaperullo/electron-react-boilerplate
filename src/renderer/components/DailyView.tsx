@@ -87,21 +87,17 @@ const DailyViewCalendar = () => {
   // Filter doctors based on their availability and appointments for the selected day
   const filteredDoctors = users.filter(user => {
     if (user.role !== 'doctor') return false;
-    const hasAvailability = user.availability?.some(avail => dayjs(avail.date).isSame(selectedDate, 'day'));
+    const hasAvailability = availabilities.some(avail => avail.doctorID === user.id && dayjs(avail.date).isSame(selectedDate, 'day'));
     const hasAppointments = appointments.some(app => app.doctorID === user.id && dayjs(app.time).isSame(selectedDate, 'day'));
-    console.log('Filtering doctors:', user, hasAvailability, hasAppointments); // Add this line
     return hasAvailability || hasAppointments;
   });
   
   const getAvailabilityForDoctor = (doctorID: number) => {
-    const availability = availabilities.filter(avail => avail.doctorID === doctorID && dayjs(avail.date).isSame(selectedDate, 'day'));
-    return availability;
+    return availabilities.filter(avail => avail.doctorID === doctorID && dayjs(avail.date).isSame(selectedDate, 'day'));
   };
   
   const getAppointmentsForDoctor = (doctorID: number) => {
-    const appointmentsForDoctor = appointments.filter(app => app.doctorID === doctorID && dayjs(app.time).isSame(selectedDate, 'day'));
-    console.log('Getting appointments for doctor:', doctorID, appointmentsForDoctor); // Add this line
-    return appointmentsForDoctor;
+    return appointments.filter(app => app.doctorID === doctorID && dayjs(app.time).isSame(selectedDate, 'day'));
   };
 
   return (
